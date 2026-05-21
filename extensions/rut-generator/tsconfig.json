@@ -15,5 +15,5 @@
     "resolveJsonModule": true,
     "skipLibCheck": true
   },
-  "include": ["src", "tests"]
+  "include": ["src", "tests", "raycast-env.d.ts"]
 }

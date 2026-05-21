@@ -2,10 +2,6 @@ import { Action, ActionPanel, Clipboard, Icon, List, Toast, getPreferenceValues,
 import { useState } from "react";
 import { RutFormat, calculateVerificationDigit, formatRut, generateRutBody } from "./rut";
 
-type Preferences = {
-  defaultFormat: RutFormat;
-};
-
 type RutItem = {
   index: number;
   rutBody: number;
@@ -21,7 +17,7 @@ const FORMAT_LABELS: Record<RutFormat, string> = {
 const FORMATS: RutFormat[] = ["dots", "dash", "plain"];
 
 export default function Command() {
-  const preferences = getPreferenceValues<Preferences>();
+  const preferences = getPreferenceValues<Preferences.GenerateRut>();
   const [format, setFormat] = useState<RutFormat>(preferences.defaultFormat);
   const [items, setItems] = useState<RutItem[]>(() => createRutItems());
   const ruts = items.map((item) => formatRut(item.rutBody, item.verificationDigit, format));
