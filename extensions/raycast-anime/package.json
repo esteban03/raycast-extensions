@@ -6,7 +6,9 @@
   "icon": "icon.png",
   "author": "esteban03",
   "license": "MIT",
-  "categories": ["Fun"],
+  "categories": [
+    "Media"
+  ],
   "commands": [
     {
       "name": "search-anime",

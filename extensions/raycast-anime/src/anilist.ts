@@ -187,9 +187,16 @@ export async function getCurrentSeasonAnime(season: string, year: number) {
 }
 
 export async function getAiringEpisodes(startTimestamp: number, endTimestamp: number) {
+  let page = 1;
+  let hasNextPage = true;
+  const airingSchedules: AiringEpisode[] = [];
+
   const query = `
-    query AiringEpisodes($startTimestamp: Int, $endTimestamp: Int) {
-      Page(page: 1, perPage: 50) {
+    query AiringEpisodes($startTimestamp: Int, $endTimestamp: Int, $page: Int) {
+      Page(page: $page, perPage: 50) {
+        pageInfo {
+          hasNextPage
+        }
         airingSchedules(
           airingAt_greater: $startTimestamp
           airingAt_lesser: $endTimestamp
@@ -206,12 +213,24 @@ export async function getAiringEpisodes(startTimestamp: number, endTimestamp: nu
     }
   `;
 
-  const data = await requestAniList<{ Page: { airingSchedules: AiringEpisode[] } }>(query, {
-    startTimestamp,
-    endTimestamp,
-  });
+  while (hasNextPage) {
+    const data = await requestAniList<{
+      Page: {
+        pageInfo: { hasNextPage: boolean };
+        airingSchedules: AiringEpisode[];
+      };
+    }>(query, {
+      startTimestamp,
+      endTimestamp,
+      page,
+    });
 
-  return data.Page.airingSchedules;
+    airingSchedules.push(...data.Page.airingSchedules);
+    hasNextPage = data.Page.pageInfo.hasNextPage;
+    page += 1;
+  }
+
+  return airingSchedules;
 }
 
 export function getAnimeTitle(anime: Anime) {

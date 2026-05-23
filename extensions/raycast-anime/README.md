@@ -8,8 +8,7 @@ AniMe does not use platform-specific APIs, so it is intended to work across Rayc
 <img width="1000" height="625" alt="raycast-anime-3" src="https://github.com/user-attachments/assets/b4450c5f-6411-41fe-a5a7-ceb4bf89a8fa" />
 <img width="1000" height="625" alt="raycast-anime-4" src="https://github.com/user-attachments/assets/fc08c128-e57f-461a-9ccc-2e6a0d9a74da" />
 
-
-
+https://github.com/user-attachments/assets/fdf11146-0949-4d5d-ac57-9b5a779e4508
 
 ## First Run
 

@@ -12,13 +12,19 @@ import {
   StreamingPlatformFilter,
 } from "./anilist";
 import { AnimeGridItem, AnimeListItem } from "./anime-components";
+import { ErrorView } from "./error-view";
 import { getAnimePreferences, Onboarding } from "./preferences";
 import { GridStreamingFilterDropdown, ListStreamingFilterDropdown } from "./streaming-filter";
 
 export default function Command() {
   const [filter, setFilter] = useState<StreamingPlatformFilter>("all");
   const { season, year } = getCurrentAnimeSeason();
-  const { data = [], isLoading } = useCachedPromise(getCurrentSeasonAnime, [season, year]);
+  const {
+    data = [],
+    error,
+    isLoading,
+    revalidate: retryEpisodes,
+  } = useCachedPromise(getCurrentSeasonAnime, [season, year]);
   const { data: preferences, isLoading: isLoadingPreferences, revalidate } = useCachedPromise(getAnimePreferences);
   const filteredAnime = filterAnimeByStreamingPlatform(data, filter);
   const sections = groupByAiringDay(filteredAnime);
@@ -45,7 +51,14 @@ export default function Command() {
         aspectRatio="2/3"
         fit={Grid.Fit.Fill}
       >
-        {isLoading && sections.length === 0 ? (
+        {error ? (
+          <ErrorView
+            isGallery
+            description={error.message}
+            onRetry={retryEpisodes}
+            title="Could Not Load Current Season"
+          />
+        ) : isLoading && sections.length === 0 ? (
           <Grid.EmptyView title="Loading Current Season..." description="Fetching airing anime from AniList." />
         ) : (
           sections.map((section) => (
@@ -78,7 +91,9 @@ export default function Command() {
       searchBarPlaceholder={`Filter ${season.toLowerCase()} ${year}...`}
       searchBarAccessory={<ListStreamingFilterDropdown value={filter} onChange={setFilter} />}
     >
-      {isLoading && sections.length === 0 ? (
+      {error ? (
+        <ErrorView description={error.message} onRetry={retryEpisodes} title="Could Not Load Current Season" />
+      ) : isLoading && sections.length === 0 ? (
         <List.EmptyView title="Loading Current Season..." description="Fetching airing anime from AniList." />
       ) : (
         sections.map((section) => (
