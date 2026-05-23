@@ -1,0 +1,65 @@
+{
+  "$schema": "https://www.raycast.com/schemas/extension.json",
+  "name": "raycast-anime",
+  "title": "AniMe",
+  "description": "Discover anime, current season releases, today's episodes, and a local watchlist powered by AniList.",
+  "icon": "icon.png",
+  "author": "esteban03",
+  "license": "MIT",
+  "categories": ["Fun"],
+  "commands": [
+    {
+      "name": "search-anime",
+      "title": "Search Anime",
+      "description": "Search anime by title on AniList.",
+      "icon": "icon.png",
+      "mode": "view"
+    },
+    {
+      "name": "current-season",
+      "title": "Current Season",
+      "description": "Browse anime airing during the current season.",
+      "icon": "icon.png",
+      "mode": "view"
+    },
+    {
+      "name": "todays-episodes",
+      "title": "Today's Episodes",
+      "description": "Browse anime episodes airing today.",
+      "icon": "icon.png",
+      "mode": "view"
+    },
+    {
+      "name": "last-7-days",
+      "title": "Last 7 Days",
+      "description": "Browse anime episodes that aired during the last seven days.",
+      "icon": "icon.png",
+      "mode": "view"
+    },
+    {
+      "name": "watchlist",
+      "title": "Watchlist",
+      "description": "Manage a local anime watchlist.",
+      "icon": "icon.png",
+      "mode": "view"
+    }
+  ],
+  "dependencies": {
+    "@raycast/api": "^1.95.0",
+    "@raycast/utils": "^1.17.0"
+  },
+  "devDependencies": {
+    "@raycast/eslint-config": "^2.0.4",
+    "eslint": "^9.0.0",
+    "prettier": "^3.0.0",
+    "typescript": "^5.4.0"
+  },
+  "scripts": {
+    "build": "ray build -e dist",
+    "dev": "ray develop",
+    "fix-lint": "ray lint --fix",
+    "lint": "ray lint",
+    "publish": "npx @raycast/api@latest publish",
+    "typecheck": "tsc --noEmit"
+  }
+}
