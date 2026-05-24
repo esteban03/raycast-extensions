@@ -1,4 +1,7 @@
 const ANILIST_API_URL = "https://graphql.anilist.co";
+const ANILIST_REQUEST_INTERVAL_MS = 750;
+const ANILIST_CACHE_TTL_MS = 5 * 60 * 1000;
+const ANILIST_MAX_RETRIES = 3;
 
 export type AnimeTitle = {
   romaji?: string;
@@ -66,6 +69,9 @@ type GraphQLResponse<T> = {
   errors?: { message: string }[];
 };
 
+const anilistCache = new Map<string, { expiresAt: number; data: unknown }>();
+let nextAniListRequestAt = 0;
+
 const MEDIA_FIELDS = `
   id
   title {
@@ -112,6 +118,22 @@ const MEDIA_FIELDS = `
 `;
 
 async function requestAniList<T>(query: string, variables: Record<string, unknown>) {
+  const cacheKey = getAniListCacheKey(query, variables);
+  const cached = anilistCache.get(cacheKey);
+
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.data as T;
+  }
+
+  const data = await requestAniListWithRetry<T>(query, variables);
+  anilistCache.set(cacheKey, { data, expiresAt: Date.now() + ANILIST_CACHE_TTL_MS });
+
+  return data;
+}
+
+async function requestAniListWithRetry<T>(query: string, variables: Record<string, unknown>, attempt = 0): Promise<T> {
+  await waitForAniListSlot();
+
   const response = await fetch(ANILIST_API_URL, {
     method: "POST",
     headers: {
@@ -129,6 +151,11 @@ async function requestAniList<T>(query: string, variables: Record<string, unknow
     json = undefined;
   }
 
+  if (response.status === 429 && attempt < ANILIST_MAX_RETRIES) {
+    await sleep(getAniListRetryDelay(response));
+    return requestAniListWithRetry<T>(query, variables, attempt + 1);
+  }
+
   if (!response.ok || json?.errors?.length) {
     throw new Error(json?.errors?.[0]?.message ?? getAniListErrorMessage(response.status));
   }
@@ -137,7 +164,46 @@ async function requestAniList<T>(query: string, variables: Record<string, unknow
     throw new Error("AniList returned an empty response");
   }
 
+  if (Number(response.headers.get("X-RateLimit-Remaining") ?? "1") <= 1) {
+    nextAniListRequestAt = Math.max(nextAniListRequestAt, Date.now() + ANILIST_REQUEST_INTERVAL_MS);
+  }
+
   return json.data;
+}
+
+async function waitForAniListSlot() {
+  const now = Date.now();
+  const waitMs = Math.max(nextAniListRequestAt - now, 0);
+
+  nextAniListRequestAt = Math.max(nextAniListRequestAt, now) + ANILIST_REQUEST_INTERVAL_MS;
+
+  if (waitMs > 0) {
+    await sleep(waitMs);
+  }
+}
+
+function getAniListRetryDelay(response: Response) {
+  const retryAfter = Number(response.headers.get("Retry-After"));
+
+  if (Number.isFinite(retryAfter) && retryAfter > 0) {
+    return retryAfter * 1000;
+  }
+
+  const resetAt = Number(response.headers.get("X-RateLimit-Reset"));
+
+  if (Number.isFinite(resetAt) && resetAt > 0) {
+    return Math.max(resetAt * 1000 - Date.now(), ANILIST_REQUEST_INTERVAL_MS);
+  }
+
+  return 60 * 1000;
+}
+
+function getAniListCacheKey(query: string, variables: Record<string, unknown>) {
+  return JSON.stringify({ query, variables });
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function getAniListErrorMessage(status: number) {
@@ -328,6 +394,8 @@ export function getLocalDayTimestamps(date = new Date()) {
 
 export function getLastSevenDaysTimestamps(date = new Date()) {
   const end = new Date(date);
+  end.setSeconds(0, 0);
+
   const start = new Date(end);
   start.setDate(end.getDate() - 7);
 
