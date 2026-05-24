@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { filterAnimeByStreamingPlatform, searchAnime, StreamingPlatformFilter } from "./anilist";
 import { AnimeGridItem, AnimeListItem } from "./anime-components";
+import { ErrorView } from "./error-view";
 import { getAnimePreferences, Onboarding } from "./preferences";
 import { GridStreamingFilterDropdown, ListStreamingFilterDropdown } from "./streaming-filter";
 
@@ -12,7 +13,12 @@ export default function Command() {
   const [filter, setFilter] = useState<StreamingPlatformFilter>("all");
   const { data: preferences, isLoading: isLoadingPreferences, revalidate } = useCachedPromise(getAnimePreferences);
   const query = searchText.trim();
-  const { data = [], isLoading } = usePromise(searchAnime, [query], {
+  const {
+    data = [],
+    error,
+    isLoading,
+    revalidate: retrySearch,
+  } = usePromise(searchAnime, [query], {
     execute: query.length > 0,
   });
   const filteredAnime = filterAnimeByStreamingPlatform(data, filter);
@@ -41,7 +47,9 @@ export default function Command() {
         aspectRatio="2/3"
         fit={Grid.Fit.Fill}
       >
-        {isLoading && filteredAnime.length === 0 ? (
+        {error ? (
+          <ErrorView isGallery description={error.message} onRetry={retrySearch} title="Could Not Search Anime" />
+        ) : isLoading && filteredAnime.length === 0 ? (
           <Grid.EmptyView title="Loading Anime..." description="Fetching results from AniList." />
         ) : query.length === 0 ? (
           <Grid.EmptyView title="Search for Anime" description="Type a title to query AniList." />
@@ -62,7 +70,9 @@ export default function Command() {
       searchBarAccessory={<ListStreamingFilterDropdown value={filter} onChange={setFilter} />}
       throttle
     >
-      {isLoading && filteredAnime.length === 0 ? (
+      {error ? (
+        <ErrorView description={error.message} onRetry={retrySearch} title="Could Not Search Anime" />
+      ) : isLoading && filteredAnime.length === 0 ? (
         <List.EmptyView title="Loading Anime..." description="Fetching results from AniList." />
       ) : query.length === 0 ? (
         <List.EmptyView title="Search for Anime" description="Type a title to query AniList." />
